@@ -1,0 +1,108 @@
+
+// Smart Market Structure Concepts MT4
+// Developer's Site: forexroboteasy.com
+// Development: Forex Robot Easy Team
+
+// Include necessary libraries
+#include <Trade\Trade.mqh>
+#include <ChartObjects\ChartObjects.mqh>
+
+// Define global variables
+CTrade trade; // Trading object
+bool enableAlerts = true; // Enable alerts flag
+int alertLevel = 3; // Alert level
+double takeProfit = 100; // Take profit value
+double stopLoss = 50; // Stop loss value
+
+// Initialize the expert advisor
+int OnInit()
+{
+   // Set expert advisor parameters
+   trade.SetExpertMagicNumber(123456); // Set magic number
+   trade.SetExpertStopLoss(stopLoss); // Set stop loss
+   trade.SetExpertTakeProfit(takeProfit); // Set take profit
+
+   return(INIT_SUCCEEDED);
+}
+
+// Start the expert advisor
+void OnTick()
+{
+   // Get current market information
+   double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+
+   // Calculate market structure
+   double liquidity = CalculateLiquidity(bid, ask);
+   double entryPoint = CalculateEntryPoint(bid, ask, liquidity);
+   double exitPoint = CalculateExitPoint(bid, ask, liquidity);
+
+   // Check if entry point is valid
+   if (IsValidPoint(entryPoint))
+   {
+      // Open position at entry point
+      trade.PositionOpen(_Symbol, POSITION_TYPE_BUY, 0.01, entryPoint, 0, stopLoss, takeProfit, 'Entry Point');
+   }
+
+   // Check if exit point is valid
+   if (IsValidPoint(exitPoint))
+   {
+      // Close position at exit point
+      trade.PositionClose(_Symbol, POSITION_TYPE_BUY, 0.01, exitPoint, 0, 'Exit Point');
+   }
+
+   // Check if alerts are enabled
+   if (enableAlerts)
+   {
+      // Show alerts based on liquidity and price characteristics
+      if (liquidity >= alertLevel)
+      {
+         Alert('High liquidity detected!');
+      }
+      if (bid > ask)
+      {
+         Alert('Bid price is higher than ask price!');
+      }
+   }
+}
+
+// Calculate liquidity based on bid and ask prices
+double CalculateLiquidity(double bid, double ask)
+{
+   double spread = ask - bid;
+   double liquidity = spread * 10000; // Multiply by 10000 to convert to points
+
+   return liquidity;
+}
+
+// Calculate entry point based on bid, ask, and liquidity
+double CalculateEntryPoint(double bid, double ask, double liquidity)
+{
+   double entryPoint = bid + (liquidity * 0.5); // Set entry point halfway between bid and ask
+
+   return entryPoint;
+}
+
+// Calculate exit point based on bid, ask, and liquidity
+double CalculateExitPoint(double bid, double ask, double liquidity)
+{
+   double exitPoint = ask - (liquidity * 0.5); // Set exit point halfway between ask and bid
+
+   return exitPoint;
+}
+
+// Check if point is valid
+bool IsValidPoint(double point)
+{
+   return (point > 0); // Point is valid if greater than zero
+}
+
+// Stop the expert advisor
+void OnDeinit(const int reason)
+{
+   // Close all open positions
+   trade.PositionCloseAll();
+
+   // Remove all chart objects
+   ObjectsDeleteAll();
+}
